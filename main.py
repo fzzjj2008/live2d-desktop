@@ -7,10 +7,10 @@ main.py
 import os
 import sys
 from pathlib import Path
-from PySide2.QtCore import Qt, QUrl, QTimer, QEvent
-from PySide2.QtWidgets import QApplication, QWidget, QAction, QMenu, QSystemTrayIcon, QVBoxLayout, QMainWindow
-from PySide2.QtGui import QIcon, QCursor
-from PySide2.QtWebEngineWidgets import QWebEngineView
+from PySide2.QtCore import *
+from PySide2.QtWidgets import *
+from PySide2.QtGui import *
+from PySide2.QtWebEngineWidgets import *
 
 
 class L2DView(QWebEngineView):
@@ -28,27 +28,28 @@ class L2DView(QWebEngineView):
         url = QUrl.fromLocalFile(f"{data_dir}/index.html")
         self.load(url)
 
-
 class MainWindow(QMainWindow):
     """
     主窗口
     """
     def __init__(self, parent=None, **kwargs):
         super().__init__(parent)
-        # 鼠标拖拽事件
-        self.is_moving = False
-        self.mouse_drag_pos = self.pos()
         # 初始化控件
         self.l2d_view = L2DView(self)
         # self.tray_icon_init()
-        self.menu_init()
+        self.context_menu_init()
         self.win_init()
+        # 鼠标拖拽事件
+        self.is_moving = False
+        self.mouse_drag_pos = self.pos()
 
-    def menu_init(self):
+    def context_menu_init(self):
         # 右键菜单
+        reload_action = QAction('重载', self, triggered=self.win_reload)
         quit_action = QAction('退出', self, triggered=self.win_quit)
-        self.menu = QMenu(self)
-        self.menu.addAction(quit_action)
+        self.context_menu = QMenu(self)
+        self.context_menu.addAction(reload_action)
+        self.context_menu.addAction(quit_action)
 
     def tray_icon_init(self):
         # 任务栏托盘
@@ -73,6 +74,9 @@ class MainWindow(QMainWindow):
         self.move(scr_width - win_width, scr_height - win_height)
         self.setCentralWidget(self.l2d_view)
 
+    def win_reload(self):
+        self.l2d_view.reload()
+
     def win_quit(self):
         self.close()
         sys.exit()
@@ -84,7 +88,7 @@ class MainWindow(QMainWindow):
             self.mouse_drag_pos = event.globalPos() - self.pos()
             event.accept()
         elif event.button() == Qt.RightButton:
-            self.menu.exec_(QCursor.pos())
+            self.context_menu.exec_(QCursor.pos())
             event.accept()
 
     def mouseMoveEvent(self, event):
@@ -100,5 +104,6 @@ class MainWindow(QMainWindow):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     win = MainWindow()
+    win.setMouseTracking(True)
     win.show()
     sys.exit(app.exec_())
