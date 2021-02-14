@@ -11,6 +11,8 @@ from PySide2.QtCore import *
 from PySide2.QtWidgets import *
 from PySide2.QtGui import *
 from PySide2.QtWebEngineWidgets import *
+from PySide2.QtWebChannel import QWebChannel
+from pynput import mouse
 
 
 class L2DView(QWebEngineView):
@@ -22,11 +24,18 @@ class L2DView(QWebEngineView):
         self.setMouseTracking(True)
         self.setWindowOpacity(1)
         self.setAttribute(Qt.WA_TranslucentBackground)
+        # 屏蔽浏览器鼠标事件
         self.setAttribute(Qt.WA_TransparentForMouseEvents)
         self.page().setBackgroundColor(Qt.transparent)
         data_dir = Path(os.path.abspath(os.path.dirname(__file__)))
         url = QUrl.fromLocalFile(f"{data_dir}/index.html")
         self.load(url)
+
+    def mouse_move_event(self, x, y):
+        print(x, y)
+        # channel = QWebChannel()
+        # channel.registerObject("backend", QPoint(x, y))
+        # self.page().setWebChannel(channel)
 
 class MainWindow(QMainWindow):
     """
@@ -42,6 +51,9 @@ class MainWindow(QMainWindow):
         # 鼠标拖拽事件
         self.is_moving = False
         self.mouse_drag_pos = self.pos()
+        # 全局鼠标监听
+        self.mouse_listener = mouse.Listener(on_move=self.on_move)
+        self.mouse_listener.start()
 
     def context_menu_init(self):
         # 右键菜单
@@ -78,6 +90,7 @@ class MainWindow(QMainWindow):
         self.l2d_view.reload()
 
     def win_quit(self):
+        self.mouse_listener.stop()
         self.close()
         sys.exit()
 
@@ -99,6 +112,9 @@ class MainWindow(QMainWindow):
     def mouseReleaseEvent(self, event):
         self.setCursor(QCursor(Qt.ArrowCursor))
         self.is_moving = False
+
+    def on_move(self, x, y):
+        self.l2d_view.mouse_move_event(x, y)
 
 
 if __name__ == '__main__':
